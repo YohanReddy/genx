@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Image, Loader2, Video } from "lucide-react";
-import { Client } from "@gradio/client";
+import { Client as GradioClient } from "@gradio/client";
 
 export default function ContentGeneratorComponent() {
   const [activeTab, setActiveTab] = useState("image");
@@ -26,7 +26,7 @@ export default function ContentGeneratorComponent() {
 
     try {
       if (activeTab === "image") {
-        const client = await Client.connect("black-forest-labs/FLUX.1-schnell");
+        const client = await GradioClient.connect("black-forest-labs/FLUX.1-schnell");
         const result = await client.predict("/infer", {
           prompt: prompt,
           seed: 0,
@@ -39,12 +39,25 @@ export default function ContentGeneratorComponent() {
         const imageUrl = (result.data as { url: string }[])[0].url; // This assumes `result.data` contains an array with objects having the `url` property.
         setGeneratedContent(imageUrl);
       } else {
-        // Simulating API call with setTimeout for video generation
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        const data = {
-          url: "https://videos.pexels.com/video-files/6153453/6153453-uhd_2732_1440_25fps.mp4",
-        };
-        setGeneratedContent(data.url);
+        const response = await fetch("https://api.lumalabs.ai/dream-machine/v1/generations", {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            authorization: `Bearer ${process.env['LUMAAI_API_KEY']}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to generate video");
+        }
+
+        const data = await response.json();
+        const videoUrl = data.assets?.video ?? "";
+        setGeneratedContent(videoUrl);
       }
     } catch (err) {
       setError("Failed to generate content. Please try again.");
