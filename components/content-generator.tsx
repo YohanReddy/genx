@@ -38,7 +38,7 @@ export default function ContentGeneratorComponent() {
       const data = { 
         url: activeTab === "image" 
           ? "https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=500&h=500&fit=crop" 
-          : "https://example.com/sample-video.mp4"
+          : "https://videos.pexels.com/video-files/6153453/6153453-uhd_2732_1440_25fps.mp4"
       }
 
       setGeneratedContent(data.url)
