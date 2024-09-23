@@ -1,53 +1,57 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Image, Loader2, Video } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Image, Loader2, Video } from "lucide-react";
+import { Client } from "@gradio/client";
 
 export default function ContentGeneratorComponent() {
-  const [activeTab, setActiveTab] = useState("image")
-  const [prompt, setPrompt] = useState("")
-  const [style, setStyle] = useState("realistic")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [generatedContent, setGeneratedContent] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("image");
+  const [prompt, setPrompt] = useState("");
+  const [style, setStyle] = useState("realistic");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-    setGeneratedContent(null)
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setGeneratedContent(null);
 
     try {
-      // Simulating API call with setTimeout
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      
-      // In a real application, you would make an API call here
-      // const response = await fetch('/api/generate', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ prompt, style, type: activeTab }),
-      // })
-      // const data = await response.json()
-      
-      // Simulated response
-      const data = { 
-        url: activeTab === "image" 
-          ? "https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=500&h=500&fit=crop" 
-          : "https://videos.pexels.com/video-files/6153453/6153453-uhd_2732_1440_25fps.mp4"
-      }
+      if (activeTab === "image") {
+        const client = await Client.connect("black-forest-labs/FLUX.1-schnell");
+        const result = await client.predict("/infer", {
+          prompt: prompt,
+          seed: 0,
+          randomize_seed: true,
+          width: 1920,
+          height: 1080,
+          num_inference_steps: 4,
+        });
 
-      setGeneratedContent(data.url)
+        const imageUrl = (result.data as { url: string }[])[0].url; // This assumes `result.data` contains an array with objects having the `url` property.
+        setGeneratedContent(imageUrl);
+      } else {
+        // Simulating API call with setTimeout for video generation
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        const data = {
+          url: "https://videos.pexels.com/video-files/6153453/6153453-uhd_2732_1440_25fps.mp4",
+        };
+        setGeneratedContent(data.url);
+      }
     } catch (err) {
-      setError("Failed to generate content. Please try again.")
+      setError("Failed to generate content. Please try again.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-8">
@@ -117,5 +121,5 @@ export default function ContentGeneratorComponent() {
         </div>
       )}
     </div>
-  )
+  );
 }
