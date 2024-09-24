@@ -8,7 +8,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Image, Loader2, Video } from "lucide-react";
-import { Client as GradioClient } from "@gradio/client";
+import axios from "axios";
+import { Client } from "@gradio/client";
 
 export default function ContentGeneratorComponent() {
   const [activeTab, setActiveTab] = useState("image");
@@ -26,7 +27,8 @@ export default function ContentGeneratorComponent() {
 
     try {
       if (activeTab === "image") {
-        const client = await GradioClient.connect("black-forest-labs/FLUX.1-schnell");
+        // For image generation, using GradioClient
+        const client = await Client.connect("black-forest-labs/FLUX.1-schnell");
         const result = await client.predict("/infer", {
           prompt: prompt,
           seed: 0,
@@ -36,30 +38,21 @@ export default function ContentGeneratorComponent() {
           num_inference_steps: 4,
         });
 
-        const imageUrl = (result.data as { url: string }[])[0].url; // This assumes `result.data` contains an array with objects having the `url` property.
+        const imageUrl = (result.data as { url: string }[])[0].url;
         setGeneratedContent(imageUrl);
       } else {
-        const response = await fetch("https://api.lumalabs.ai/dream-machine/v1/generations", {
-          method: "POST",
-          headers: {
-            accept: "application/json",
-            authorization: `Bearer ${process.env['LUMAAI_API_KEY']}`,
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            prompt: prompt,
-          }),
-        });
+        // For video generation, using the local API route
+        const response = await axios.post("/api/generate-video", { prompt });
 
-        if (!response.ok) {
+        if (response.status !== 200) {
           throw new Error("Failed to generate video");
         }
 
-        const data = await response.json();
-        const videoUrl = data.assets?.video ?? "";
+        const videoUrl = response.data.videoUrl;
         setGeneratedContent(videoUrl);
       }
     } catch (err) {
+      console.error(err);
       setError("Failed to generate content. Please try again.");
     } finally {
       setLoading(false);
@@ -98,23 +91,25 @@ export default function ContentGeneratorComponent() {
             required
           />
         </div>
-        <div>
-          <Label>Style</Label>
-          <RadioGroup value={style} onValueChange={setStyle} className="flex space-x-4">
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="realistic" id="realistic" />
-              <Label htmlFor="realistic">Realistic</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="cartoon" id="cartoon" />
-              <Label htmlFor="cartoon">Cartoon</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="abstract" id="abstract" />
-              <Label htmlFor="abstract">Abstract</Label>
-            </div>
-          </RadioGroup>
-        </div>
+        {activeTab === "image" && (
+          <div>
+            <Label>Style</Label>
+            <RadioGroup value={style} onValueChange={setStyle} className="flex space-x-4">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="realistic" id="realistic" />
+                <Label htmlFor="realistic">Realistic</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="cartoon" id="cartoon" />
+                <Label htmlFor="cartoon">Cartoon</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="abstract" id="abstract" />
+                <Label htmlFor="abstract">Abstract</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        )}
         <Button type="submit" disabled={loading} className="w-full">
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Generate {activeTab === "image" ? "Image" : "Video"}
