@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 import LumaAI from "lumaai";
 
+export const maxDuration = 60;
 export async function POST(request) {
   try {
     const { prompt } = await request.json();
